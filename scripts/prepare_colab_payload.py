@@ -19,6 +19,7 @@ import zipfile
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 
 EN_STOPWORDS = {
@@ -46,6 +47,34 @@ class Story:
     n_chars: int
     n_words: int
     sha256: str
+
+
+class ChunkRow(TypedDict):
+    split: str
+    story_id: str
+    source_file: str
+    title: str
+    chunk_id: int
+    text: str
+    description: str
+    n_chars: int
+    n_words: int
+    text_sha256: str
+
+
+class SplitRow(TypedDict):
+    split: str
+    story_id: str
+    source_file: str
+    title: str
+    n_chars: int
+    n_words: int
+    story_sha256: str
+
+
+class SummaryRow(TypedDict):
+    metric: str
+    value: int
 
 
 def parse_args() -> argparse.Namespace:
@@ -210,8 +239,8 @@ def make_description(text: str, title: str) -> str:
     )
 
 
-def build_chunks(stories: list[Story], split: str, min_chars: int, max_chars: int) -> list[dict[str, object]]:
-    rows = []
+def build_chunks(stories: list[Story], split: str, min_chars: int, max_chars: int) -> list[ChunkRow]:
+    rows: list[ChunkRow] = []
     for story in stories:
         chunks = split_into_chunks(story.text, min_chars, max_chars)
         for chunk_index, chunk in enumerate(chunks):
@@ -232,24 +261,24 @@ def build_chunks(stories: list[Story], split: str, min_chars: int, max_chars: in
     return rows
 
 
-def sample_rows(rows: list[dict[str, object]], limit: int, seed: int) -> list[dict[str, object]]:
+def sample_rows(rows: list[ChunkRow], limit: int, seed: int) -> list[ChunkRow]:
     if limit <= 0 or len(rows) <= limit:
         return rows[:]
     sampled = rows[:]
     random.Random(seed).shuffle(sampled)
-    return sorted(sampled[:limit], key=lambda row: (str(row["story_id"]), int(row["chunk_id"])))
+    return sorted(sampled[:limit], key=lambda row: (row["story_id"], row["chunk_id"]))
 
 
 def remove_overlapping_eval_chunks(
-    train_chunks: list[dict[str, object]],
-    eval_chunks: list[dict[str, object]],
-) -> tuple[list[dict[str, object]], int]:
-    train_hashes = {str(row["text_sha256"]) for row in train_chunks}
-    filtered = [row for row in eval_chunks if str(row["text_sha256"]) not in train_hashes]
+    train_chunks: list[ChunkRow],
+    eval_chunks: list[ChunkRow],
+) -> tuple[list[ChunkRow], int]:
+    train_hashes = {row["text_sha256"] for row in train_chunks}
+    filtered = [row for row in eval_chunks if row["text_sha256"] not in train_hashes]
     return filtered, len(eval_chunks) - len(filtered)
 
 
-def write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str]) -> None:
+def write_csv(path: Path, rows: list[ChunkRow] | list[SplitRow] | list[SummaryRow], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -282,10 +311,10 @@ def write_corpus_report(
     stories: list[Story],
     train_stories: list[Story],
     eval_stories: list[Story],
-    train_chunks_full: list[dict[str, object]],
-    eval_chunks_full: list[dict[str, object]],
-    train_chunks_payload: list[dict[str, object]],
-    eval_chunks_payload: list[dict[str, object]],
+    train_chunks_full: list[ChunkRow],
+    eval_chunks_full: list[ChunkRow],
+    train_chunks_payload: list[ChunkRow],
+    eval_chunks_payload: list[ChunkRow],
     leakage: dict[str, int],
     removed_eval_overlap_chunks: int,
     payload_zip: Path,
@@ -294,7 +323,7 @@ def write_corpus_report(
     story_chars = summarize_lengths([story.n_chars for story in stories])
     story_words = summarize_lengths([story.n_words for story in stories])
     chunk_chars = summarize_lengths(
-        [int(row["n_chars"]) for row in train_chunks_full + eval_chunks_full]
+        [row["n_chars"] for row in train_chunks_full + eval_chunks_full]
     )
     try:
         payload_zip_display = payload_zip.relative_to(Path.cwd())
@@ -342,8 +371,8 @@ def write_corpus_report(
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def write_summary_csv(path: Path, stories: list[Story], train_chunks: list[dict[str, object]], eval_chunks: list[dict[str, object]]) -> None:
-    rows = [
+def write_summary_csv(path: Path, stories: list[Story], train_chunks: list[ChunkRow], eval_chunks: list[ChunkRow]) -> None:
+    rows: list[SummaryRow] = [
         {"metric": "stories", "value": len(stories)},
         {"metric": "train_chunks_full", "value": len(train_chunks)},
         {"metric": "eval_chunks_full", "value": len(eval_chunks)},
@@ -393,8 +422,8 @@ def main() -> None:
 
     story_train_hashes = {story.sha256 for story in train_stories}
     story_eval_hashes = {story.sha256 for story in eval_stories}
-    chunk_train_hashes = {str(row["text_sha256"]) for row in train_chunks_full}
-    chunk_eval_hashes = {str(row["text_sha256"]) for row in eval_chunks_full}
+    chunk_train_hashes = {row["text_sha256"] for row in train_chunks_full}
+    chunk_eval_hashes = {row["text_sha256"] for row in eval_chunks_full}
     leakage = {
         "story_hash_overlap": len(story_train_hashes & story_eval_hashes),
         "chunk_hash_overlap": len(chunk_train_hashes & chunk_eval_hashes),
@@ -412,29 +441,23 @@ def main() -> None:
         "n_words",
         "text_sha256",
     ]
-    split_rows = [
-        {
-            "split": "train",
-            "story_id": story.story_id,
-            "source_file": story.path.name,
-            "title": story.title,
-            "n_chars": story.n_chars,
-            "n_words": story.n_words,
-            "story_sha256": story.sha256,
-        }
-        for story in train_stories
-    ] + [
-        {
-            "split": "eval",
-            "story_id": story.story_id,
-            "source_file": story.path.name,
-            "title": story.title,
-            "n_chars": story.n_chars,
-            "n_words": story.n_words,
-            "story_sha256": story.sha256,
-        }
-        for story in eval_stories
-    ]
+    split_rows: list[SplitRow] = []
+    for split_name, split_stories_list in [
+        ("train", train_stories),
+        ("eval", eval_stories),
+    ]:
+        for story in split_stories_list:
+            split_rows.append(
+                {
+                    "split": split_name,
+                    "story_id": story.story_id,
+                    "source_file": story.path.name,
+                    "title": story.title,
+                    "n_chars": story.n_chars,
+                    "n_words": story.n_words,
+                    "story_sha256": story.sha256,
+                }
+            )
 
     split_metadata_path = processed_dir / "split_metadata.csv"
     train_full_path = processed_dir / "train_chunks_full.csv"

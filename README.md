@@ -23,7 +23,7 @@ scripts/
 reports/
   corpus_preparation_report.md # generated corpus/split/leakage summary
 
-horror_qlora_detection_experiment_colab.ipynb
+horror_llama3_payload_experiment_colab.ipynb
 horror_experiment_for_dummies_guide.md
 ```
 
@@ -73,7 +73,7 @@ Validate scripts and notebook JSON:
 
 ```bash
 python -m py_compile scripts/extract_creepypastas.py scripts/prepare_colab_payload.py
-python -m json.tool horror_qlora_detection_experiment_colab.ipynb > /tmp/horror_notebook_validated.json
+python -m json.tool horror_llama3_payload_experiment_colab.ipynb > /tmp/horror_notebook_validated.json
 ```
 
 Default payload settings:
@@ -102,7 +102,7 @@ corpus_preparation_report.md
 
 ## Colab Run
 
-Upload `horror_qlora_detection_experiment_colab.ipynb` and
+Upload `horror_llama3_payload_experiment_colab.ipynb` and
 `data/horror_experiment_payload.zip` to Google Colab.
 
 The final notebook should:

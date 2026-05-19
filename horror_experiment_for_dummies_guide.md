@@ -23,16 +23,18 @@ Notebook повторяет основную логику статьи *When Det
 1. Собери `.txt` файлы с хоррор-историями.
 2. Проверь лицензию текстов. Лучше использовать public domain, CC BY, CC BY-SA, CC0 или тексты с разрешением автора.
 3. Сохрани все `.txt` в одну папку.
-4. Заархивируй папку в `horror_texts.zip`.
+4. Запусти локальный payload-скрипт, чтобы получить `data/horror_experiment_payload.zip`.
 
 Пример:
 
+```bash
+python3 scripts/prepare_colab_payload.py
+```
+
+На выходе нужен файл:
+
 ```text
-horror_texts.zip
-├── story_001.txt
-├── story_002.txt
-├── story_003.txt
-└── story_004.txt
+data/horror_experiment_payload.zip
 ```
 
 ## Если используешь Kaggle-датасет 3500 Popular Creepypastas
@@ -75,16 +77,21 @@ python3 scripts/extract_creepypastas.py \
   --overwrite
 ```
 
-Эта папка лежит внутри `data/`, поэтому не попадёт в git. Для Colab её можно заархивировать и загрузить как обычный `horror_texts.zip`.
+Эта папка лежит внутри `data/`, поэтому не попадёт в git. Для Colab используй не папку с `.txt`, а готовый payload:
+
+```bash
+python3 scripts/prepare_colab_payload.py
+```
 
 ## Как запустить
 
 1. Открой Google Colab.
 2. Нажми `File → Upload notebook`.
-3. Загрузи файл `horror_qlora_detection_experiment_colab.ipynb`.
+3. Загрузи файл `horror_llama3_payload_experiment_colab.ipynb`.
 4. В меню выбери `Runtime → Change runtime type`.
 5. В поле `Hardware accelerator` выбери `T4 GPU`.
-6. Запускай ячейки сверху вниз.
+6. Когда notebook попросит файл, загрузи `data/horror_experiment_payload.zip`.
+7. Запускай ячейки сверху вниз.
 
 ## Где нужно что-то менять
 
@@ -93,18 +100,18 @@ python3 scripts/extract_creepypastas.py \
 Эксперимент теперь зафиксирован как English-only + Llama 3 8B:
 
 ```python
-"LANGUAGE": "en"
 "GEN_MODEL_NAME": "meta-llama/Meta-Llama-3-8B-Instruct"
 "DETECTOR_MODEL_NAME": "openai-community/roberta-base-openai-detector"
-"MAX_HUMAN_SAMPLES": 1000
+"SMOKE_TEST": True
+"SMOKE_TRAIN_SAMPLES": 80
+"SMOKE_EVAL_SAMPLES": 24
 "NUM_EPOCHS": 5
 ```
 
-Для smoke test можно временно ослабить запуск:
+Для полного запуска отключи smoke test:
 
 ```python
-"MAX_HUMAN_SAMPLES": 200
-"NUM_EPOCHS": 1
+"SMOKE_TEST": False
 ```
 
 Для Llama 3 8B нужен Hugging Face доступ:
@@ -124,34 +131,33 @@ Notebook устанавливает библиотеки для:
 - обучения детектора;
 - расчёта метрик.
 
-### Шаг 2. Загрузка корпуса
+### Шаг 2. Загрузка payload
 
-Ты загружаешь ZIP с `.txt` файлами. Notebook распаковывает его и ищет все тексты.
+Ты загружаешь `horror_experiment_payload.zip`. Notebook распаковывает уже подготовленные CSV:
 
-### Шаг 3. Нарезка текстов
+```text
+train_with_descriptions.csv
+eval_with_descriptions.csv
+split_metadata.csv
+corpus_summary.csv
+corpus_preparation_report.md
+```
 
-Длинные рассказы режутся на фрагменты. Это нужно, чтобы сравнивать тексты сопоставимой длины.
+### Шаг 3. Проверка train/eval split
+
+Нарезка текстов и descriptions уже сделаны локально скриптом `scripts/prepare_colab_payload.py`. В notebook проверяется, сколько train/eval chunks загружено и включён ли `SMOKE_TEST`.
 
 По умолчанию:
 
-```python
-"MIN_CHARS": 500
-"MAX_CHARS": 1200
+```bash
+python3 scripts/prepare_colab_payload.py --min-chars 700 --max-chars 1500
 ```
 
-То есть каждый пример будет примерно от 500 до 1200 символов.
+То есть каждый пример будет примерно от 700 до 1500 символов.
 
-### Шаг 4. Создание описаний
+### Шаг 4. Загрузка Llama 3 8B
 
-Для каждого человеческого фрагмента создаётся короткое задание для генерации. Например:
-
-```text
-Напиши короткий фрагмент хоррор-истории в художественном стиле.
-Сохрани атмосферу тревоги, неизвестности и нарастающего страха.
-Опорные мотивы/слова: дверь, ночь, тень, голос...
-```
-
-Это аналог “Topic” из оригинальной статьи.
+Notebook загружает `meta-llama/Meta-Llama-3-8B-Instruct` в 4-bit режиме. Это требует GPU и Hugging Face доступа к gated Llama model.
 
 ### Шаг 5. Генерация base AI
 
@@ -292,10 +298,11 @@ human vs fine-tuned AI    accuracy = 0.70
 ### Ошибка: CUDA out of memory
 
 Что делать:
-- уменьшить `MAX_HUMAN_SAMPLES`;
+- включить `SMOKE_TEST`;
+- уменьшить `SMOKE_TRAIN_SAMPLES` и `SMOKE_EVAL_SAMPLES`;
 - поставить `LORA_R = 16`;
 - уменьшить `MAX_NEW_TOKENS`;
-- использовать модель 1B–1.5B, а не 7B/8B.
+- если нужно строго следовать статье, оставить Llama 3 8B; если нужно только отладить код, временно заменить модель на меньшую.
 
 ### Ошибка: нет GPU
 
