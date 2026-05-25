@@ -95,7 +95,7 @@ python3 scripts/prepare_colab_payload.py
 
 ## Где нужно что-то менять
 
-Главный блок называется `CONFIG`.
+Главный блок называется `CONFIG`, но основные параметры можно менять без редактирования кода: после загрузки `horror_experiment_payload.zip` notebook спросит значения через `input()`. Для первого стабильного запуска просто нажимай `Enter` на всех вопросах.
 
 Эксперимент теперь зафиксирован как English-only + Llama 3 8B:
 
@@ -105,7 +105,10 @@ python3 scripts/prepare_colab_payload.py
 "SMOKE_TEST": True
 "SMOKE_TRAIN_SAMPLES": 80
 "SMOKE_EVAL_SAMPLES": 24
-"NUM_EPOCHS": 5
+"NUM_EPOCHS": 1
+"LORA_R": 16
+"LEARNING_RATE": 5e-5
+"MAX_NEW_TOKENS": 250
 ```
 
 Для полного запуска отключи smoke test:
