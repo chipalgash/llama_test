@@ -63,8 +63,15 @@ creepypastas.xlsx
 !requirements.txt
 data/
 datasets/
+horror_experiment_results/
 outputs/
 checkpoints/
 models/
 runs/
 wandb/
+
+# Model weights and large ML binaries
+*.safetensors
+*.pt
+*.pth
+*.bin
