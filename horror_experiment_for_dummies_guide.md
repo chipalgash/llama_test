@@ -103,12 +103,12 @@ python3 scripts/prepare_colab_payload.py
 "GEN_MODEL_NAME": "meta-llama/Meta-Llama-3-8B-Instruct"
 "DETECTOR_MODEL_NAME": "openai-community/roberta-base-openai-detector"
 "SMOKE_TEST": True
-"SMOKE_TRAIN_SAMPLES": 80
+"SMOKE_TRAIN_SAMPLES": 300
 "SMOKE_EVAL_SAMPLES": 24
 "NUM_EPOCHS": 1
-"LORA_R": 16
-"LEARNING_RATE": 5e-5
-"MAX_NEW_TOKENS": 250
+"LORA_R": 8
+"LEARNING_RATE": 1e-5
+"MAX_NEW_TOKENS": 180
 ```
 
 Для полного запуска отключи smoke test:
