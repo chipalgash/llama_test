@@ -1,0 +1,10 @@
+metric,value
+input_files,3833
+stories,3798
+skipped_short,28
+skipped_low_words,1
+skipped_duplicate,6
+train_chunks_full,6830
+eval_chunks_full,1696
+story_chars_total,12941920
+story_words_total,2021707
