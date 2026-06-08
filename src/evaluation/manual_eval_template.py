@@ -8,6 +8,11 @@ import csv
 import random
 from pathlib import Path
 
+from src.utils.logging import StepTimer, get_logger, log_kv, log_stage
+
+
+LOGGER = get_logger("manual_eval_template")
+
 
 EVAL_COLUMNS = [
     "id",
@@ -91,7 +96,20 @@ def write_csv(path: Path, rows: list[dict[str, str]], columns: list[str]) -> Non
 
 
 def main() -> None:
+    timer = StepTimer()
     args = parse_args()
+    log_stage(LOGGER, "Manual evaluation template started")
+    log_kv(
+        LOGGER,
+        {
+            "sample_size_per_condition": args.sample_size,
+            "seed": args.seed,
+            "en_output": args.en_output,
+            "ru_output": args.ru_output,
+            "blinded_output": args.blinded_output,
+            "mapping_output": args.mapping_output,
+        },
+    )
     rng = random.Random(args.seed)
 
     en_rows = [
@@ -105,6 +123,8 @@ def main() -> None:
 
     write_csv(args.en_output, en_rows, EVAL_COLUMNS)
     write_csv(args.ru_output, ru_rows, EVAL_COLUMNS)
+    LOGGER.info("EN manual eval rows: %s", len(en_rows))
+    LOGGER.info("RU manual eval rows: %s", len(ru_rows))
 
     all_rows = en_rows + ru_rows
     rng.shuffle(all_rows)
@@ -137,7 +157,10 @@ def main() -> None:
 
     write_csv(args.blinded_output, blinded_rows, BLINDED_COLUMNS)
     write_csv(args.mapping_output, mapping_rows, ["blind_id", "id", "language", "condition"])
-    print(f"Wrote {len(blinded_rows)} blinded rows to {args.blinded_output}")
+    log_stage(LOGGER, "Manual evaluation template finished")
+    LOGGER.info("Wrote %s blinded rows to %s", len(blinded_rows), args.blinded_output)
+    LOGGER.info("Wrote condition mapping to %s", args.mapping_output)
+    LOGGER.info("Total elapsed: %s", timer.elapsed())
 
 
 if __name__ == "__main__":

@@ -80,13 +80,13 @@ outputs/ru/baseline_generations.csv
 Colab/GPU commands:
 
 ```bash
-python -m src.generation.generate_baseline \
+PYTHONPATH=$PWD python -m src.generation.generate_baseline \
   --language en \
   --eval-jsonl data/processed/en/eval_payload.jsonl \
   --output-csv outputs/en/baseline_generations.csv \
   --max-samples 100
 
-python -m src.generation.generate_baseline \
+PYTHONPATH=$PWD python -m src.generation.generate_baseline \
   --language ru \
   --eval-jsonl data/processed/ru/eval_payload.jsonl \
   --output-csv outputs/ru/baseline_generations.csv \
@@ -119,14 +119,14 @@ adapters/ru_lora_adapter/
 Colab/GPU training commands:
 
 ```bash
-python -m src.training.train_qlora \
+PYTHONPATH=$PWD python -m src.training.train_qlora \
   --train-jsonl data/processed/en/train_payload.jsonl \
   --eval-jsonl data/processed/en/eval_payload.jsonl \
   --adapter-dir adapters/en_lora_adapter \
   --max-train-samples 500 \
   --max-eval-samples 100
 
-python -m src.training.train_qlora \
+PYTHONPATH=$PWD python -m src.training.train_qlora \
   --train-jsonl data/processed/ru/train_payload.jsonl \
   --eval-jsonl data/processed/ru/eval_payload.jsonl \
   --adapter-dir adapters/ru_lora_adapter \
@@ -144,14 +144,14 @@ outputs/ru/finetuned_generations.csv
 Colab/GPU fine-tuned generation commands:
 
 ```bash
-python -m src.generation.generate_with_adapter \
+PYTHONPATH=$PWD python -m src.generation.generate_with_adapter \
   --language en \
   --eval-jsonl data/processed/en/eval_payload.jsonl \
   --adapter-dir adapters/en_lora_adapter \
   --output-csv outputs/en/finetuned_generations.csv \
   --max-samples 100
 
-python -m src.generation.generate_with_adapter \
+PYTHONPATH=$PWD python -m src.generation.generate_with_adapter \
   --language ru \
   --eval-jsonl data/processed/ru/eval_payload.jsonl \
   --adapter-dir adapters/ru_lora_adapter \

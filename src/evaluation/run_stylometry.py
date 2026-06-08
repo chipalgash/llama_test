@@ -17,6 +17,10 @@ from src.evaluation.statistical_tests import (
     rank_biserial,
     stdev,
 )
+from src.utils.logging import StepTimer, get_logger, log_kv, log_stage
+
+
+LOGGER = get_logger("run_stylometry")
 
 
 def parse_args() -> argparse.Namespace:
@@ -143,15 +147,32 @@ def write_summary(path: Path, feature_rows: list[dict[str, str | float]]) -> Non
 
 
 def main() -> None:
+    timer = StepTimer()
     args = parse_args()
+    log_stage(LOGGER, "Stylometry started")
+    log_kv(
+        LOGGER,
+        {
+            "language": args.language,
+            "human_jsonl": args.human_jsonl,
+            "baseline_csv": args.baseline_csv,
+            "finetuned_csv": args.finetuned_csv,
+            "features_csv": args.features_csv,
+            "summary_csv": args.summary_csv,
+        },
+    )
     source_rows = [
         *read_human_jsonl(args.human_jsonl, args.language),
         *read_generation_csv(args.baseline_csv, "baseline", args.language),
         *read_generation_csv(args.finetuned_csv, "finetuned", args.language),
     ]
+    LOGGER.info("Rows loaded for feature extraction: %s", len(source_rows))
     feature_rows = write_features(args.features_csv, source_rows, args.language)
     write_summary(args.summary_csv, feature_rows)
-    print(f"Wrote {len(feature_rows)} feature rows to {args.features_csv}")
+    log_stage(LOGGER, "Stylometry finished")
+    LOGGER.info("Wrote %s feature rows to %s", len(feature_rows), args.features_csv)
+    LOGGER.info("Wrote metric summary to %s", args.summary_csv)
+    LOGGER.info("Total elapsed: %s", timer.elapsed())
 
 
 if __name__ == "__main__":
