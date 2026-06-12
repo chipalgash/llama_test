@@ -1,13 +1,14 @@
 {
   "language": "ru",
-  "source_train_csv": "archive/old_experiments/payloads/ru_csv/train_with_descriptions.csv",
-  "source_eval_csv": "archive/old_experiments/payloads/ru_csv/eval_with_descriptions.csv",
-  "train_jsonl": "data/processed/ru/train_payload.jsonl",
-  "eval_jsonl": "data/processed/ru/eval_payload.jsonl",
-  "source_train_rows": 2000,
-  "source_eval_rows": 500,
-  "written_train_rows": 500,
-  "written_eval_rows": 100,
-  "story_level_split": true,
-  "notes": "Generated from existing story-level split CSV files."
+  "seed": 42,
+  "sizes": {
+    "train": 500,
+    "validation": 100,
+    "test": 100
+  },
+  "story_id_overlap": {
+    "train_validation": 0,
+    "train_test": 0,
+    "validation_test": 0
+  }
 }
